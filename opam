@@ -1,0 +1,21 @@
+opam-version: "1.2"
+name: "opam-hub"
+version: "1.2"
+maintainer: "rgrinberg <rudi.grinberg@gmail.com>"
+authors: "rgrinberg <rudi.grinberg@gmail.com>"
+homepage: "https://github.com/rgrinberg/opam-hub"
+bug-reports: "https://github.com/rgrinberg/opam-hub/issues"
+dev-repo: "git://github.com/rgrinberg/opam-hub"
+license: "MIT"
+build: [ "omake" ]
+depends: [
+  "ocamlfind"  {build}
+  "omake" {build}
+  "opam-lib"
+  "containers"
+  "cmdliner"
+  "github"
+  "lwt"
+  "uri"
+]
+available: [ ocaml-version >= "4.01" ]
