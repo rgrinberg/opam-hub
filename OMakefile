@@ -6,7 +6,11 @@ OCAMLPACKS[] =
   ppx_deriving
   ppx_sexp_conv
   cmdliner
+  containers
   lwt
+  opam-lib
+  opam-lib.client
+  lwt.unix
   github.unix
 
 .SUBDIRS: src
