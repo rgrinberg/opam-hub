@@ -1,0 +1,14 @@
+*.cmt
+*.cmti
+*.opt
+*.byte
+*.cmo
+*.cmi
+*.cma
+*.cmx
+*.o
+*.cmxa
+.merlin
+*.omc
+.omakedb*
+opam-hub
