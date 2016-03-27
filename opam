@@ -12,6 +12,7 @@ depends: [
   "ocamlfind"  {build}
   "omake" {build}
   "opam-lib"
+  "stringext"
   "containers"
   "cmdliner"
   "github"

@@ -6,6 +6,39 @@ let return = Lwt.return
 module Smap = CCMap.Make(String)
 module Client = OpamClient.SafeAPI
 
+type error =
+  | Not_github of OpamPackage.t
+  | Package_not_found of string
+exception Hub_error of error
+
+let browse url =
+  let cmd =
+    if OpamGlobals.os () = OpamGlobals.Darwin
+    then "open"
+    else "xdg-open" in
+  OpamSystem.command [cmd ; Uri.to_string url]
+
+let last_char = function
+  | "" -> None
+  | s -> Some (s.[String.length s])
+
+let append_url url u =
+  let path = Uri.path url in
+  let new_path =
+    match last_char path, last_char u with
+    | Some '/', Some '/' -> path ^ (Stringext.drop u 1)
+    | Some _, Some '/' -> path ^ u
+    | Some _, Some _ -> path ^ "/" ^ u
+    | None, Some _ -> u
+    | _, None -> invalid_arg "append_url: second arg can't be empty" in
+  Uri.with_path url new_path
+
+let browse_issues github_url =
+  browse (append_url github_url "issues")
+
+let browse_prs github_url =
+  browse (append_url github_url "pulls")
+
 let opam_state =
   OpamGlobals.root_dir := OpamGlobals.default_opam_dir;
   ref (OpamState.load_state "list")
