@@ -19,4 +19,4 @@ depends: [
   "lwt"
   "uri"
 ]
-available: [ ocaml-version >= "4.01" ]
+available: [ ocaml-version >= "4.02.3" ]
