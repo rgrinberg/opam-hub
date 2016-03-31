@@ -94,17 +94,6 @@ let latest_or_installed pkgs =
     ) pkgs (OpamPackage.Set.choose pkgs)
   with M.Found p -> p
 
-let find_opam_packages =
-  List.fold_left (fun m name ->
-    let pkg = OpamPackage.Name.of_string name in
-    let pkgs = OpamState.find_packages_by_name !opam_state pkg in
-    if OpamPackage.Set.is_empty pkgs then
-      failwith @@ sprintf "Name %s doesn't match any package" name
-    else
-      let pkg = latest_or_installed pkgs in
-      Smap.add name pkg m
-  ) Smap.empty
-
 let find_opam_package name =
   let pkg = OpamPackage.Name.of_string name in
   let pkgs = OpamState.find_packages_by_name !opam_state pkg in
