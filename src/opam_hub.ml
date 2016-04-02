@@ -5,6 +5,9 @@ open Lwt.Infix
 let return = Lwt.return
 module Smap = CCMap.Make(String)
 module Client = OpamClient.SafeAPI
+module Gh = Github_t
+
+let (>>|) m f = Github.Monad.(>|=) m f
 
 type error =
   | Infer_repo_error of string
@@ -68,6 +71,9 @@ let append_uri uri ~path =
     | None, Some _ -> path
     | _, None -> invalid_arg "append_url: second arg can't be empty" in
   Uri.with_path uri new_path
+
+let pr_pin_path base number =
+  sprintf "%s#pull/%d/head" (Uri.to_string base) number
 
 let browse_issues github_url =
   browse (append_uri github_url ~path:"issues")
@@ -135,11 +141,21 @@ let packages_of_args = function
       |> find_opam_package
       |> OpamState.opam !opam_state)
 
+let package_of_arg = function
+  | None -> guess_current_repo ()
+  | Some p ->
+    p
+    |> find_opam_package
+    |> OpamState.opam !opam_state
+
 let package =
   Arg.(value & pos 0 (some string) None & info [] ~doc:"")
 
 let packages =
   Arg.(value & pos_all string [] & info [] ~doc:"TODO")
+
+let pr_num =
+  Arg.(required & pos 1 (some int) None & info [] ~doc:"pull request number")
 
 let maintainers pkgs =
   pkgs
@@ -162,6 +178,40 @@ let browse pkgs issues prs =
   |> List.map f
   |> List.iter browse
 
+let prs package =
+  let package = package_of_arg package in
+  let { user ; repo } =
+    package
+    |> dev_repo_github_url
+    |> github_base_url
+    |> github_repo_of_uri in
+  Github.Issue.for_repo ~user ~repo ()
+  |> Github.Stream.to_list
+  >>| (fun issues ->
+    issues
+    |> List.filter (function
+      | { Gh.issue_pull_request=Some _ } -> true
+      | _ -> false)
+    |> List.iter (fun i ->
+      printf "%d: %s\n" i.Gh.issue_number i.Gh.issue_title))
+  |> Github.Monad.run
+  |> Lwt_main.run
+
+let pin package pr =
+  let package = package_of_arg package in
+  let name =
+    package
+    |> OpamFile.OPAM.name
+    |> OpamPackage.Name.to_string in
+  let base_url =
+    package
+    |> dev_repo_github_url
+    |> github_base_url in
+  let pin_path = pr_pin_path base_url pr in
+  let pin_cmd =
+    sprintf "opam pin add -k git %s '%s'" name pin_path in
+  exit (Sys.command pin_cmd)
+
 let maintainers =
   let open Term in
   pure maintainers $ packages,
@@ -173,6 +223,16 @@ let browse =
   let prs = Arg.(value & flag & info ["prs" ; "p"]) in
   pure browse $ packages $ issues $ prs,
   info "browse" ~doc:"browse github page"
+
+let prs =
+  let open Term in
+  pure prs $ package,
+  info "prs" ~doc:"show open pull requests"
+
+let pin =
+  let open Term in
+  pure pin $ package $ pr_num,
+  info "pin" ~doc:"pin pr number"
 
 let default_cmd =
   let doc = "win @ opam + github" in
@@ -191,6 +251,6 @@ let default_cmd =
   Term.info "opam-hub" ~doc ~man
 
 let () =
-  match Term.eval_choice default_cmd [maintainers ; browse] with
+  match Term.eval_choice default_cmd [maintainers ; browse ; prs ; pin] with
   | `Error _ -> exit 1
   | _ -> exit 0
