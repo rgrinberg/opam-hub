@@ -15,6 +15,7 @@ type error =
   | No_dev_repo of OpamFile.OPAM.t
   | Package_not_found of string
   | Issues_prs_enabled
+  | Clone_failed of Uri.t * int
 exception Hub_error of error
 
 let () =
@@ -212,6 +213,16 @@ let pin package pr =
     sprintf "opam pin add -k git %s '%s'" name pin_path in
   exit (Sys.command pin_cmd)
 
+let clone packages =
+  let urls =
+    packages
+    |> packages_of_args
+    |> List.map dev_repo_github_url in
+  urls |> List.iter (fun u ->
+    let res = Sys.command (sprintf "git clone %s" (Uri.to_string u)) in
+    if res <> 0 then
+      raise_hub (Clone_failed (u, res)))
+
 let maintainers =
   let open Term in
   pure maintainers $ packages,
@@ -234,6 +245,11 @@ let pin =
   pure pin $ package $ pr_num,
   info "pin" ~doc:"pin pr number"
 
+let clone =
+  let open Term in
+  pure clone $ packages,
+  info "clone" ~doc:"clone"
+
 let default_cmd =
   let doc = "win @ opam + github" in
   Term.(ret (pure (`Help (`Pager, None)))),
@@ -251,6 +267,7 @@ let default_cmd =
   Term.info "opam-hub" ~doc ~man
 
 let () =
-  match Term.eval_choice default_cmd [maintainers ; browse ; prs ; pin] with
+  let cmds = [maintainers ; browse ; prs ; pin ; clone] in
+  match Term.eval_choice default_cmd cmds with
   | `Error _ -> exit 1
   | _ -> exit 0
