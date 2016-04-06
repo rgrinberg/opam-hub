@@ -7,32 +7,64 @@ module Smap = CCMap.Make(String)
 module Client = OpamClient.SafeAPI
 module Gh = Github_t
 
+open Sexplib.Conv
+open Sexplib.Std
+
 let (>>|) m f = Github.Monad.(>|=) m f
 
 type error =
   | Infer_repo_error of string
   | Not_github of Uri.t
-  | No_dev_repo of OpamFile.OPAM.t
+  | No_dev_repo of OpamFile.OPAM.t sexp_opaque
   | Package_not_found of string
   | Issues_prs_enabled
   | Clone_failed of Uri.t * int
-exception Hub_error of error
+  [@@deriving sexp]
+exception Hub_error of error [@@deriving sexp_of]
 
 let () =
   (* TODO Add the rest *)
   Printexc.register_printer (function
     | Hub_error (Not_github u) ->
       Some (sprintf "Not github uri: '%s'" (Uri.to_string u))
-    | _ -> None )
+    | Github.Message (_, m) ->
+      let sexp = [%sexp_of: Github_t.message] m in
+      Some (Sexplib.Sexp.to_string_hum sexp)
+    | _ -> None)
+
+let hub_error e = Hub_error e
 
 let raise_hub e = raise (Hub_error e)
 
 type github_repo =
   { user: string
   ; repo: string }
+  [@@deriving sexp]
 
 let find_maintainer github_repo =
   github_repo.user (* XXX doesn't work when user is an org *)
+
+let token =
+  let token = lazy (Sys.getenv "GH_COOKIE") in
+  fun () -> Github.Token.of_string (Lazy.force token)
+
+let ask_fork { user ; repo } =
+  let open Github.Monad in
+  let token = token () in
+  Github.Repo.fork ~token ~user ~repo () >>~ (fun a ->
+    return a.Github_t.repository_clone_url
+  ) |> run
+
+let fork repo =
+  ask_fork repo >>= fun url ->
+  Lwt_unix.system (sprintf "git clone %s" url) >>= function
+  | Lwt_unix.WEXITED x when x = 0 -> return ()
+  | Lwt_unix.WEXITED x
+  | Lwt_unix.WSTOPPED x
+  | Lwt_unix.WSIGNALED x ->
+    Clone_failed ((Uri.of_string url), x)
+    |> hub_error
+    |> Lwt.fail
 
 let github_repo_of_uri =
   let re =
@@ -223,6 +255,18 @@ let clone packages =
     if res <> 0 then
       raise_hub (Clone_failed (u, res)))
 
+let fork packages =
+  let packages = packages_of_args packages in
+  let repos =
+    List.map (fun package ->
+      package
+      |> dev_repo_github_url
+      |> github_base_url
+      |> github_repo_of_uri ) packages in
+  repos
+  |> Lwt_list.iter_p fork
+  |> Lwt_main.run
+
 let maintainers =
   let open Term in
   pure maintainers $ packages,
@@ -250,6 +294,11 @@ let clone =
   pure clone $ packages,
   info "clone" ~doc:"clone"
 
+let fork =
+  let open Term in
+  pure fork $ packages,
+  info "fork" ~doc:"fork"
+
 let default_cmd =
   let doc = "win @ opam + github" in
   Term.(ret (pure (`Help (`Pager, None)))),
@@ -267,7 +316,7 @@ let default_cmd =
   Term.info "opam-hub" ~doc ~man
 
 let () =
-  let cmds = [maintainers ; browse ; prs ; pin ; clone] in
+  let cmds = [maintainers ; browse ; prs ; pin ; clone ; fork] in
   match Term.eval_choice default_cmd cmds with
   | `Error _ -> exit 1
   | _ -> exit 0

@@ -5,6 +5,7 @@ USE_OCAMLFIND = true
 OCAMLPACKS[] =
   ppx_deriving
   ppx_sexp_conv
+  sexplib
   cmdliner
   containers
   stringext
