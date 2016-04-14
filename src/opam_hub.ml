@@ -6,15 +6,12 @@ let return = Lwt.return
 module Client = OpamClient.SafeAPI
 module Gh = Github_t
 
-open Sexplib.Conv
-open Sexplib.Std
-
 let (>>|) m f = Github.Monad.(>|=) m f
 
 type error =
   | Infer_repo_error of string
   | Not_github of Uri.t
-  | No_dev_repo of OpamFile.OPAM.t sexp_opaque
+  | No_dev_repo of OpamFile.OPAM.t
   | Package_not_found of string
   | Issues_prs_enabled
   | Git_failure of string

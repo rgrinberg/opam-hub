@@ -3,8 +3,6 @@ OCAMLFLAGS = -g -bin-annot -thread
 USE_OCAMLFIND = true
 
 OCAMLPACKS[] =
-  ppx_deriving
-  sexplib
   cmdliner
   containers
   stringext
