@@ -30,7 +30,7 @@ OCAMLPACKS[] =
     close($(chan))
 
 opam-hub: src/opam-hub
-    ln-or-cp $< $@
+  ln-or-cp $< $@
 
 .PHONY: clean
 clean:
