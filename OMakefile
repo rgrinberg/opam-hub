@@ -26,9 +26,18 @@ OCAMLPACKS[] =
     foreach(p => ..., $(OCAMLPACKS))
       fprintln($(chan),PKG $p)
     close($(chan))
-
-opam-hub: src/opam-hub
+$(PROG): src/$(PROG)
   ln-or-cp $< $@
+
+README.md: $(PROG)
+  section
+    stdout = $(fopen $@, wb)
+    println($"# opam-hub")
+    println($(EMPTY)) # :/
+    println($"```")
+    ./$(PROG) --help=plain
+    println($"```")
+    close($(stdout))
 
 .PHONY: clean
 clean:
@@ -40,4 +49,4 @@ clean:
     foreach(p => ..., $(protected.PRJ))
       rm $(filter-exists $(find $p -name *.cmt -o -name *.cmti))
 
-.DEFAULT: .merlin opam-hub
+.DEFAULT: .merlin $(PROG) README.md

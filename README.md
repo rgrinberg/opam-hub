@@ -1,15 +1,43 @@
-# opam hub
+# opam-hub
 
-opam hub remote <pkg>
-opam hub mentions <pkg>
-opam hub browse <pkg>
-opam hub fork <pkg>
-opam hub clone <pkg>
-opam hub prs <pkg>
-opam hub issues <pkg>
+```
+NAME
+       opam-hub
 
-opam hub pin <pkg> <pr>
-opam hub grep <query> <pkg>
+SYNOPSIS
+       opam-hub COMMAND ...
 
-opam hub pr
-opam hub issue
+DESCRIPTION
+       Opam + Github integration
+
+COMMANDS
+       browse
+           browse github page
+
+       clone
+           clone
+
+       fork
+           fork
+
+       maintainers
+           display maintainer names
+
+       pin pin pr number
+
+       prs show open pull requests
+
+OPTIONS
+       --help[=FMT] (default=pager)
+           Show this help in format FMT (pager, plain or groff).
+
+AUTHORIZATION OPTIONS
+       use ocaml-github's jar thing
+
+COMMON OPTIONS
+       --help will show more help for each of the sub-commands above.
+
+BUGS
+       Report them online at <http://github.com/rgrinberg/opam-hub>.
+
+```

@@ -361,7 +361,6 @@ let fork =
   info "fork" ~doc:"fork"
 
 let default_cmd =
-  let doc = "win @ opam + github" in
   Term.(ret (const (`Help (`Pager, None)))),
   let man = [
     `S "DESCRIPTION";
@@ -372,7 +371,7 @@ let default_cmd =
     `P "$(b,--help) will show more help for each of the sub-commands above.";
     `S "BUGS";
     `P "Report them online at <http://github.com/rgrinberg/opam-hub>."] in
-  Term.info "opam-hub" ~doc ~man
+  Term.info "opam-hub" ~man
 
 let () =
   let cmds = [maintainers ; browse ; prs ; pin ; clone ; fork] in
