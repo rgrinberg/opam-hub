@@ -52,8 +52,11 @@ let ask_fork { user ; repo } =
     return a.Github_t.repository_clone_url
   ) |> run
 
-let fork repo =
-  ask_fork repo >>= fun url ->
+type remote =
+  { name: string
+  ; url: string }
+
+let clone ?dir ?branch ?(remotes=[]) url =
   Lwt_unix.system (sprintf "git clone %s" url) >>= function
   | Lwt_unix.WEXITED x when x = 0 -> return ()
   | Lwt_unix.WEXITED x
@@ -62,6 +65,10 @@ let fork repo =
     Clone_failed ((Uri.of_string url), x)
     |> hub_error
     |> Lwt.fail
+
+let fork repo =
+  ask_fork repo >>= fun url ->
+  clone url
 
 let github_repo_of_uri =
   let re =
