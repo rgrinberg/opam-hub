@@ -54,7 +54,15 @@ let ask_fork { user ; repo } =
   ) |> run
 
 module Git = struct
-  let git_dir_path u = u (* TODO *)
+  let git_dir_path =
+    let open Re in
+    let re =
+      [ char '/'
+      ; group (rep1 any)
+      ; opt (seq [str ".git"; opt (char '/')]) ]
+      |> seq
+      |> compile in
+    fun s -> Re.get (Re.exec re s) 1
 
   let git args =
     let args = String.concat " " args in (* TODO dumb *)
@@ -89,9 +97,7 @@ module Git = struct
       | Some s -> s in
     remotes |> Lwt_list.iter_s (fun (name, url) -> add_remote ~repo ~name ~url)
 
-  let fork repo =
-    ask_fork repo >>= fun url ->
-    clone url
+  let fork repo = ask_fork repo >>= clone
 end
 
 let github_repo_of_uri =
