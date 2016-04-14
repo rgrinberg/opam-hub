@@ -224,6 +224,9 @@ let package =
 let packages =
   Arg.(value & pos_all string [] & info [] ~doc:"TODO")
 
+let strict_packages =
+  Arg.(non_empty & pos_all string [] & info [] ~doc:"TODO")
+
 let pr_num =
   Arg.(required & pos 1 (some int) None & info [] ~doc:"pull request number")
 
@@ -349,13 +352,13 @@ let git_name = Arg.(value & flag & info ["git-name"; "g"])
 
 let clone =
   let open Term in
-  pure clone $ packages $ git_name,
+  pure clone $ strict_packages $ git_name,
   info "clone" ~doc:"clone"
 
 let fork =
   let open Term in
   let remotes = Arg.(value & flag & info ["remotes"; "r"]) in
-  pure fork $ packages $ git_name $ remotes,
+  pure fork $ strict_packages $ git_name $ remotes,
   info "fork" ~doc:"fork"
 
 let default_cmd =
