@@ -96,9 +96,12 @@ module Git = struct
       | None -> git_dir_path url
       | Some s -> s in
     remotes |> Lwt_list.iter_s (fun (name, url) -> add_remote ~repo ~name ~url)
-
-  let fork repo = ask_fork repo >>= clone
 end
+
+let opam_name p =
+  p
+  |> OpamFile.OPAM.name
+  |> OpamPackage.Name.to_string
 
 let github_repo_of_uri =
   let re =
@@ -276,10 +279,7 @@ let prs package =
 
 let pin package pr =
   let package = package_of_arg package in
-  let name =
-    package
-    |> OpamFile.OPAM.name
-    |> OpamPackage.Name.to_string in
+  let name = opam_name package in
   let base_url =
     package
     |> dev_repo_github_url
@@ -300,16 +300,19 @@ let clone packages git_name =
     Git.clone ?dir (Uri.to_string u))
   |> Lwt_main.run
 
-let fork packages =
+let fork packages git_name =
   let packages = packages_of_args packages in
   let repos =
     List.map (fun package ->
       package
       |> dev_repo_github_url
       |> github_base_url
-      |> github_repo_of_uri ) packages in
-  repos
-  |> Lwt_list.iter_p Git.fork
+      |> github_repo_of_uri) packages in
+  List.combine repos packages
+  |> Lwt_list.iter_p (fun (r, p) ->
+    ask_fork r >>= fun s ->
+    let dir = if git_name then None else Some (opam_name p) in
+    Git.clone ?dir s)
   |> Lwt_main.run
 
 let maintainers =
@@ -337,15 +340,16 @@ let pin =
   pure pin $ package $ pr_num,
   info "pin" ~doc:"pin pr number"
 
+let git_name = Arg.(value & flag & info ["git-name"; "-g"])
+
 let clone =
   let open Term in
-  let git_name = Arg.(value & flag & info ["git-name"; "-g"]) in
   pure clone $ packages $ git_name,
   info "clone" ~doc:"clone"
 
 let fork =
   let open Term in
-  pure fork $ packages,
+  pure fork $ packages $ git_name,
   info "fork" ~doc:"fork"
 
 let default_cmd =
