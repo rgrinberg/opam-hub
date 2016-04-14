@@ -3,7 +3,6 @@ open Cmdliner
 open Lwt.Infix
 
 let return = Lwt.return
-module Smap = CCMap.Make(String)
 module Client = OpamClient.SafeAPI
 module Gh = Github_t
 
@@ -190,13 +189,23 @@ let packages =
 let pr_num =
   Arg.(required & pos 1 (some int) None & info [] ~doc:"pull request number")
 
-let maintainers pkgs =
-  pkgs
-  |> packages_of_args
-  |> List.map dev_repo_url
-  |> List.iter (fun uri ->
-    let repo = github_repo_of_uri uri in
-    printf "%s\n" (find_maintainer repo))
+let maintainers pkgs mentions unique sort =
+  let nub l =
+    l
+    |> List.fold_left (fun acc a ->
+      if List.mem a acc
+      then acc
+      else a::acc) []
+    |> List.rev in
+  let ms =
+    pkgs
+    |> packages_of_args
+    |> List.map dev_repo_url
+    |> List.map (fun uri -> uri |> github_repo_of_uri |> find_maintainer) in
+  let ms = if unique then nub ms else ms in
+  let ms = if sort then List.sort compare ms else ms in
+  let ms = if mentions then List.map (sprintf "@%s") ms else ms in
+  List.iter (printf "%s\n") ms
 
 let browse pkgs issues prs =
   let f =
@@ -269,7 +278,10 @@ let fork packages =
 
 let maintainers =
   let open Term in
-  pure maintainers $ packages,
+  let mentions = Arg.(value & flag & info ["mentions"; "m"]) in
+  let unique = Arg.(value & flag & info ["unique"; "u"]) in
+  let sort = Arg.(value & flag & info ["sort"; "s"]) in
+  pure maintainers $ packages $ mentions $ unique $ sort,
   info "maintainers" ~doc:"display maintainer names"
 
 let browse =
