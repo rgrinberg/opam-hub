@@ -318,7 +318,7 @@ let fork packages git_name remotes =
     let dir = if git_name then None else Some opam_name in
     let remotes =
       if remotes
-      then ["opam-name", p |> dev_repo_github_url |> Uri.to_string]
+      then [opam_name, Uri.to_string (dev_repo_github_url p)]
       else [] in
     Git.clone ?dir ~remotes s)
   |> Lwt_main.run
