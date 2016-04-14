@@ -66,16 +66,8 @@ module Git = struct
     fun s -> Re.get (Re.exec re s) 1
 
   let git args =
-    let args = String.concat " " args in (* TODO dumb *)
-    let cmd = sprintf "git %s" args in
-    Lwt_unix.system cmd >>= function
-    | Lwt_unix.WEXITED x when x = 0 -> return ()
-    | Lwt_unix.WEXITED x
-    | Lwt_unix.WSTOPPED x
-    | Lwt_unix.WSIGNALED x ->
-      Git_failure cmd
-      |> hub_error
-      |> Lwt.fail
+    Lwt_preemptive.detach (fun () ->
+      OpamSystem.command ~verbose:true ("git" :: args)) ()
 
   let add_remote ~repo ~name ~url =
     git ["-C"; repo; "remote"; "add"; name; url]

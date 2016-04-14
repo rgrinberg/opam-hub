@@ -12,6 +12,7 @@ OCAMLPACKS[] =
   opam-lib
   opam-lib.client
   lwt.unix
+  lwt.preemptive
   github.unix
 
 .SUBDIRS: src
