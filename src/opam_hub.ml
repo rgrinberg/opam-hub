@@ -19,6 +19,7 @@ type error =
   | Issues_prs_enabled
   | Git_failure of string
   | Clone_failed of Uri.t * int
+  | Auto_remote_conflict
 exception Hub_error of error
 
 let () =
@@ -303,7 +304,13 @@ let clone packages git_name =
     Git.clone ?dir (Uri.to_string u))
   |> Lwt_main.run
 
-let fork packages git_name remotes =
+let fork packages git_name auto_remotes remote_name =
+  let remote_name =
+    match auto_remotes, remote_name with
+    | true, Some _ -> raise (hub_error Auto_remote_conflict)
+    | false, Some n -> fun _ -> Some n
+    | true, None -> fun p -> Some p
+    | false, None -> fun _ -> None in
   let packages = packages_of_args packages in
   let repos =
     List.map (fun package ->
@@ -317,9 +324,9 @@ let fork packages git_name remotes =
     let opam_name = opam_name p in
     let dir = if git_name then None else Some opam_name in
     let remotes =
-      if remotes
-      then [opam_name, Uri.to_string (dev_repo_github_url p)]
-      else [] in
+      match remote_name opam_name with
+      | Some n -> [n, Uri.to_string (dev_repo_github_url p)]
+      | None -> [] in
     Git.clone ?dir ~remotes s)
   |> Lwt_main.run
 
@@ -357,8 +364,9 @@ let clone =
 
 let fork =
   let open Term in
-  let remotes = Arg.(value & flag & info ["remotes"; "r"]) in
-  pure fork $ strict_packages $ git_name $ remotes,
+  let auto_remotes = Arg.(value & flag & info ["auto-remote"; "a"]) in
+  let remotes = Arg.(value & opt (some string) None & info ["remote"; "r"]) in
+  pure fork $ strict_packages $ git_name $ auto_remotes $ remotes,
   info "fork" ~doc:"fork"
 
 let default_cmd =
