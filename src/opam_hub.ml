@@ -18,8 +18,7 @@ type error =
   | Package_not_found of string
   | Issues_prs_enabled
   | Clone_failed of Uri.t * int
-  [@@deriving sexp]
-exception Hub_error of error [@@deriving sexp_of]
+exception Hub_error of error
 
 let () =
   (* TODO Add the rest *)
@@ -38,7 +37,6 @@ let raise_hub e = raise (Hub_error e)
 type github_repo =
   { user: string
   ; repo: string }
-  [@@deriving sexp]
 
 let find_maintainer github_repo =
   github_repo.user (* XXX doesn't work when user is an org *)
