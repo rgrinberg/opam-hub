@@ -212,13 +212,15 @@ let package_of_arg = function
     |> OpamState.opam !opam_state
 
 let package =
-  Arg.(value & pos 0 (some string) None & info [] ~doc:"")
+  Arg.(value & pos 0 (some string) None & info [] ~doc:"opam package name")
 
 let packages =
-  Arg.(value & pos_all string [] & info [] ~doc:"TODO")
+  let doc = "opam packages. defaults to the package in the current dir" in
+  Arg.(value & pos_all string [] & info [] ~doc)
 
 let strict_packages =
-  Arg.(non_empty & pos_all string [] & info [] ~doc:"TODO")
+  let doc = "opam packages" in
+  Arg.(non_empty & pos_all string [] & info [] ~doc)
 
 let pr_num =
   Arg.(required & pos 1 (some int) None & info [] ~doc:"pull request number")
