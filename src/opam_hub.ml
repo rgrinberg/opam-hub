@@ -28,8 +28,8 @@ let () =
     | Hub_error (Not_github u) ->
       Some (sprintf "Not github uri: '%s'" (Uri.to_string u))
     | Github.Message (_, m) ->
-      let sexp = [%sexp_of: Github_t.message] m in
-      Some (Sexplib.Sexp.to_string_hum sexp)
+      let json = Github_j.string_of_message m in
+      Some (Yojson.Safe.prettify json)
     | _ -> None)
 
 let hub_error e = Hub_error e
