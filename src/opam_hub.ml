@@ -17,6 +17,7 @@ type error =
   | No_dev_repo of OpamFile.OPAM.t sexp_opaque
   | Package_not_found of string
   | Issues_prs_enabled
+  | Git_failure of string
   | Clone_failed of Uri.t * int
 exception Hub_error of error
 
@@ -52,23 +53,46 @@ let ask_fork { user ; repo } =
     return a.Github_t.repository_clone_url
   ) |> run
 
-type remote =
-  { name: string
-  ; url: string }
+module Git = struct
+  let git_dir_path u = u (* TODO *)
 
-let clone ?dir ?branch ?(remotes=[]) url =
-  Lwt_unix.system (sprintf "git clone %s" url) >>= function
-  | Lwt_unix.WEXITED x when x = 0 -> return ()
-  | Lwt_unix.WEXITED x
-  | Lwt_unix.WSTOPPED x
-  | Lwt_unix.WSIGNALED x ->
-    Clone_failed ((Uri.of_string url), x)
-    |> hub_error
-    |> Lwt.fail
+  let git args =
+    let args = String.concat " " args in (* TODO dumb *)
+    let cmd = sprintf "git %s" args in
+    Lwt_unix.system cmd >>= function
+    | Lwt_unix.WEXITED x when x = 0 -> return ()
+    | Lwt_unix.WEXITED x
+    | Lwt_unix.WSTOPPED x
+    | Lwt_unix.WSIGNALED x ->
+      Git_failure cmd
+      |> hub_error
+      |> Lwt.fail
 
-let fork repo =
-  ask_fork repo >>= fun url ->
-  clone url
+  let add_remote ~repo ~name ~url =
+    git ["-C"; repo; "remote"; "add"; name; url]
+
+  let clone ?dir ?branch ?(remotes=[]) url =
+    let args =
+      match branch with
+      | Some b -> ["-b"; b]
+      | None -> [] in
+    let args = args @ [url] in
+    let args =
+      match dir with
+      | None -> args
+      | Some d -> args @ [d] in
+    let args = "clone"::args in
+    git args >>= fun () ->
+    let repo =
+      match dir with
+      | None -> git_dir_path url
+      | Some s -> s in
+    remotes |> Lwt_list.iter_s (fun (name, url) -> add_remote ~repo ~name ~url)
+
+  let fork repo =
+    ask_fork repo >>= fun url ->
+    clone url
+end
 
 let github_repo_of_uri =
   let re =
@@ -259,15 +283,16 @@ let pin package pr =
     sprintf "opam pin add -k git %s '%s'" name pin_path in
   exit (Sys.command pin_cmd)
 
-let clone packages =
+let clone packages git_name =
   let urls =
     packages
     |> packages_of_args
     |> List.map dev_repo_github_url in
-  urls |> List.iter (fun u ->
-    let res = Sys.command (sprintf "git clone %s" (Uri.to_string u)) in
-    if res <> 0 then
-      raise_hub (Clone_failed (u, res)))
+  List.combine urls packages
+  |> Lwt_list.iter_p (fun (u, p) ->
+    let dir = if git_name then None else Some p in
+    Git.clone ?dir (Uri.to_string u))
+  |> Lwt_main.run
 
 let fork packages =
   let packages = packages_of_args packages in
@@ -278,7 +303,7 @@ let fork packages =
       |> github_base_url
       |> github_repo_of_uri ) packages in
   repos
-  |> Lwt_list.iter_p fork
+  |> Lwt_list.iter_p Git.fork
   |> Lwt_main.run
 
 let maintainers =
@@ -308,7 +333,8 @@ let pin =
 
 let clone =
   let open Term in
-  pure clone $ packages,
+  let git_name = Arg.(value & flag & info ["git-name"; "-g"]) in
+  pure clone $ packages $ git_name,
   info "clone" ~doc:"clone"
 
 let fork =
