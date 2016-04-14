@@ -329,43 +329,43 @@ let maintainers =
   let mentions = Arg.(value & flag & info ["mentions"; "m"]) in
   let unique = Arg.(value & flag & info ["unique"; "u"]) in
   let sort = Arg.(value & flag & info ["sort"; "s"]) in
-  pure maintainers $ packages $ mentions $ unique $ sort,
+  const maintainers $ packages $ mentions $ unique $ sort,
   info "maintainers" ~doc:"display maintainer names"
 
 let browse =
   let open Term in
   let issues = Arg.(value & flag & info ["issues" ; "i"]) in
   let prs = Arg.(value & flag & info ["prs" ; "p"]) in
-  pure browse $ packages $ issues $ prs,
+  const browse $ packages $ issues $ prs,
   info "browse" ~doc:"browse github page"
 
 let prs =
   let open Term in
-  pure prs $ package,
+  const prs $ package,
   info "prs" ~doc:"show open pull requests"
 
 let pin =
   let open Term in
-  pure pin $ package $ pr_num,
+  const pin $ package $ pr_num,
   info "pin" ~doc:"pin pr number"
 
 let git_name = Arg.(value & flag & info ["git-name"; "g"])
 
 let clone =
   let open Term in
-  pure clone $ strict_packages $ git_name,
+  const clone $ strict_packages $ git_name,
   info "clone" ~doc:"clone"
 
 let fork =
   let open Term in
   let auto_remotes = Arg.(value & flag & info ["auto-remote"; "a"]) in
   let remotes = Arg.(value & opt (some string) None & info ["remote"; "r"]) in
-  pure fork $ strict_packages $ git_name $ auto_remotes $ remotes,
+  const fork $ strict_packages $ git_name $ auto_remotes $ remotes,
   info "fork" ~doc:"fork"
 
 let default_cmd =
   let doc = "win @ opam + github" in
-  Term.(ret (pure (`Help (`Pager, None)))),
+  Term.(ret (const (`Help (`Pager, None)))),
   let man = [
     `S "DESCRIPTION";
     `P "Opam + Github integration";
