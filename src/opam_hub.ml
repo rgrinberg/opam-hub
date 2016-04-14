@@ -368,13 +368,11 @@ let default_cmd =
   Term.(ret (pure (`Help (`Pager, None)))),
   let man = [
     `S "DESCRIPTION";
-    `P "Win at opam + github";
+    `P "Opam + Github integration";
     `S "AUTHORIZATION OPTIONS";
     `P "use ocaml-github's jar thing";
     `S "COMMON OPTIONS";
     `P "$(b,--help) will show more help for each of the sub-commands above.";
-    `P "$(b,--json) Show JSON responses.";
-    `P "$(b,--pretty) pretty print JSON responses.";
     `S "BUGS";
     `P "Report them online at <http://github.com/rgrinberg/opam-hub>."] in
   Term.info "opam-hub" ~doc ~man
