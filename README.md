@@ -15,15 +15,15 @@ COMMANDS
            browse github page
 
        clone
-           clone
+           clone an opam package
 
        fork
-           fork
+           fork and clone an opam package
 
        maintainers
            display maintainer names
 
-       pin pin pr number
+       pin pin an opam package to a pull request
 
        prs show open pull requests
 

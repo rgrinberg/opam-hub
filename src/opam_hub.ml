@@ -344,21 +344,21 @@ let prs =
 let pin =
   let open Term in
   const pin $ package $ pr_num,
-  info "pin" ~doc:"pin pr number"
+  info "pin" ~doc:"pin an opam package to a pull request"
 
 let git_name = Arg.(value & flag & info ["git-name"; "g"])
 
 let clone =
   let open Term in
   const clone $ strict_packages $ git_name,
-  info "clone" ~doc:"clone"
+  info "clone" ~doc:"clone an opam package"
 
 let fork =
   let open Term in
   let auto_remotes = Arg.(value & flag & info ["auto-remote"; "a"]) in
   let remotes = Arg.(value & opt (some string) None & info ["remote"; "r"]) in
   const fork $ strict_packages $ git_name $ auto_remotes $ remotes,
-  info "fork" ~doc:"fork"
+  info "fork" ~doc:"fork and clone an opam package"
 
 let default_cmd =
   Term.(ret (const (`Help (`Pager, None)))),
