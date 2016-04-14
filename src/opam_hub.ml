@@ -300,7 +300,7 @@ let clone packages git_name =
     Git.clone ?dir (Uri.to_string u))
   |> Lwt_main.run
 
-let fork packages git_name =
+let fork packages git_name remotes =
   let packages = packages_of_args packages in
   let repos =
     List.map (fun package ->
@@ -311,8 +311,13 @@ let fork packages git_name =
   List.combine repos packages
   |> Lwt_list.iter_p (fun (r, p) ->
     ask_fork r >>= fun s ->
-    let dir = if git_name then None else Some (opam_name p) in
-    Git.clone ?dir s)
+    let opam_name = opam_name p in
+    let dir = if git_name then None else Some opam_name in
+    let remotes =
+      if remotes
+      then ["opam-name", p |> dev_repo_github_url |> Uri.to_string]
+      else [] in
+    Git.clone ?dir ~remotes s)
   |> Lwt_main.run
 
 let maintainers =
@@ -340,7 +345,7 @@ let pin =
   pure pin $ package $ pr_num,
   info "pin" ~doc:"pin pr number"
 
-let git_name = Arg.(value & flag & info ["git-name"; "-g"])
+let git_name = Arg.(value & flag & info ["git-name"; "g"])
 
 let clone =
   let open Term in
@@ -349,7 +354,8 @@ let clone =
 
 let fork =
   let open Term in
-  pure fork $ packages $ git_name,
+  let remotes = Arg.(value & flag & info ["remotes"; "r"]) in
+  pure fork $ packages $ git_name $ remotes,
   info "fork" ~doc:"fork"
 
 let default_cmd =
