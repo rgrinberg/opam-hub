@@ -29,6 +29,9 @@ OCAMLPACKS[] =
       fprintln($(chan),PKG $p)
     close($(chan))
 
+opam-hub: src/opam-hub
+    ln-or-cp $< $@
+
 .PHONY: clean
 clean:
   section
@@ -39,4 +42,4 @@ clean:
     foreach(p => ..., $(protected.PRJ))
       rm $(filter-exists $(find $p -name *.cmt -o -name *.cmti))
 
-.DEFAULT: .merlin
+.DEFAULT: .merlin opam-hub
