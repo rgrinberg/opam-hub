@@ -46,7 +46,7 @@ let find_maintainer github_repo =
   github_repo.user (* XXX doesn't work when user is an org *)
 
 let token =
-  let token = lazy (Sys.getenv "GH_COOKIE") in
+  let token = lazy (Sys.getenv "GH_TOKEN") in
   fun () -> Github.Token.of_string (Lazy.force token)
 
 let ask_fork { user ; repo } =
