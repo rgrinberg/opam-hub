@@ -13,23 +13,28 @@ type error =
   | Not_github of Uri.t
   | No_dev_repo of OpamFile.OPAM.t
   | Package_not_found of string
-  | Issues_prs_enabled
-  | Git_failure of string
-  | Clone_failed of Uri.t * int
-  | Auto_remote_conflict
+  | Fail of string
 exception Hub_error of error
 
+let opam_name p =
+  p
+  |> OpamFile.OPAM.name
+  |> OpamPackage.Name.to_string
+
+let string_of_error = function
+  | Not_github u -> sprintf "Not github uri: '%s'" (Uri.to_string u)
+  | No_dev_repo p -> sprintf "package %s has no dev-repo" (opam_name p)
+  | Package_not_found p -> sprintf "package %s doesn't exist" p
+  | Infer_repo_error s -> s
+  | Fail f -> f
+
 let () =
-  (* TODO Add the rest *)
   Printexc.register_printer (function
-    | Hub_error (Not_github u) ->
-      Some (sprintf "Not github uri: '%s'" (Uri.to_string u))
+    | Hub_error e -> Some (string_of_error e)
     | Github.Message (_, m) ->
       let json = Github_j.string_of_message m in
       Some (Yojson.Safe.prettify json)
     | _ -> None)
-
-let hub_error e = Hub_error e
 
 let raise_hub e = raise (Hub_error e)
 
@@ -87,11 +92,6 @@ module Git = struct
       | Some s -> s in
     remotes |> Lwt_list.iter_s (fun (name, url) -> add_remote ~repo ~name ~url)
 end
-
-let opam_name p =
-  p
-  |> OpamFile.OPAM.name
-  |> OpamPackage.Name.to_string
 
 let github_repo_of_uri =
   let re =
@@ -246,7 +246,7 @@ let browse pkgs issues prs =
     | false, false -> fun x -> x
     | false, true -> append_uri ~path:"pulls"
     | true, false -> append_uri ~path:"issues"
-    | true, true -> raise_hub Issues_prs_enabled in
+    | true, true -> raise_hub (Fail "can't set both --issues and --prs") in
   pkgs
   |> packages_of_args
   |> List.map dev_repo_github_url
@@ -298,7 +298,8 @@ let clone packages git_name =
 let fork packages git_name auto_remotes remote_name =
   let remote_name =
     match auto_remotes, remote_name with
-    | true, Some _ -> raise (hub_error Auto_remote_conflict)
+    | true, Some _ ->
+      raise_hub (Fail "Cannot use --auth-remote with --reomote")
     | false, Some n -> fun _ -> Some n
     | true, None -> fun p -> Some p
     | false, None -> fun _ -> None in
