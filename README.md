@@ -42,4 +42,4 @@ BUGS
 
 ```
 ## Shiny
-[![asciicast]](https://asciinema.org/a/0sp32lha63y70jmmuxt6d5s3x)
+[![asciicast]((https://asciinema.org/a/0sp32lha63y70jmmuxt6d5s3x.png)](https://asciinema.org/a/0sp32lha63y70jmmuxt6d5s3x)
