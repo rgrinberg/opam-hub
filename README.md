@@ -41,3 +41,5 @@ BUGS
        Report them online at <http://github.com/rgrinberg/opam-hub>.
 
 ```
+## Shiny
+[![asciicast]](https://asciinema.org/a/0sp32lha63y70jmmuxt6d5s3x)
