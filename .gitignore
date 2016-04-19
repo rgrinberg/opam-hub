@@ -12,3 +12,4 @@
 *.omc
 .omakedb*
 opam-hub
+*.man

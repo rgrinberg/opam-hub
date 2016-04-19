@@ -29,16 +29,16 @@ OCAMLPACKS[] =
 $(PROG): src/$(PROG)
   ln-or-cp $< $@
 
-README.md: $(PROG)
+MAN = $(PROG).man
+$(MAN): $(PROG)
+  ./$(PROG) --help=plain > $@
+
+README.md: README.md.in $(MAN)
   section
-    stdout = $(fopen $@, wb)
-    println($"# opam-hub")
-    println($(EMPTY)) # :/
-    println($"```")
-    ./$(PROG) --help=plain
-    println($"```")
-    println($"## Shiny")
-    println($"""[![asciicast](https://asciinema.org/a/0sp32lha63y70jmmuxt6d5s3x.png)](https://asciinema.org/a/0sp32lha63y70jmmuxt6d5s3x)""")
+    stdout = $(fopen $@,w)
+    fsubst($<)
+    case $"%man%" g
+      value $(cat $(MAN))
     close($(stdout))
 
 .PHONY: clean
